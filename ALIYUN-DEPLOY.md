@@ -112,187 +112,63 @@ sudo chown -R $USER:$USER /opt/qianniu
 
 ## 📥 部署千牛应用
 
-### 方案 A：从源码克隆并使用本地构建的镜像
+GitHub Actions 会自动构建 **两个镜像** 并推送到 GHCR：
+- `ghcr.io/zongyangbigpolo/qianniu-server:main` — 后端 API
+- `ghcr.io/zongyangbigpolo/qianniu-admin:main` — 前端管理后台（已内置 Nginx + API 反向代理）
+
+仓库根目录已经提供好了 `docker-compose.prod.yml`，直接 clone 仓库、改密码、启动即可，**不需要在服务器上编译任何东西**。
+
+### 第 1 步：确保镜像可以被拉取（重要！）
+
+GHCR 镜像默认是 **私有** 的，即使仓库是私有的也一样。有两种解决方式：
+
+**方式 A（推荐）：把镜像包设为公开**
+1. 打开 https://github.com/zongyangbigpolo?tab=packages
+2. 点击 `qianniu-server` → 右侧 Package settings → Change visibility → Public
+3. 对 `qianniu-admin` 重复同样操作
+
+**方式 B：在 ECS 上用 Token 登录 GHCR**
+```bash
+# 用具有 read:packages 权限的 GitHub Token 登录
+echo "你的GitHubToken" | docker login ghcr.io -u zongyangbigpolo --password-stdin
+```
+
+### 第 2 步：Clone 仓库并配置
 
 ```bash
 cd /opt/qianniu
 
-# 克隆项目
+# Clone 仓库（只需要 sql/ 目录的建表脚本 + docker-compose.prod.yml，不需要编译源码）
 git clone https://github.com/zongyangbigpolo/qianniu.git .
 
-# 进入 Docker 配置目录
-cd script/docker
-
 # 创建环境变量文件
-cp .env.example .env
+cp .env.prod.example .env
 
-# 编辑环境变量（修改密码等）
+# 编辑环境变量，务必修改所有密码
 vim .env
-
-# 构建镜像（注意：这会在本地构建，需要 Java 环境）
-docker-compose build
-
-# 或者，如果已在 GitHub Actions 中构建，直接启动
-docker-compose up -d
 ```
 
-### 方案 B：只拉取预构建的 Docker 镜像（推荐 ⭐）
-
-这个方案最简单，因为 GitHub Actions 已经为你构建好了镜像！
+### 第 3 步：启动服务
 
 ```bash
-cd /opt/qianniu
+# 拉取镜像（会从 GHCR 拉取 GitHub Actions 构建好的镜像）
+docker compose -f docker-compose.prod.yml pull
 
-# 1. 创建 docker-compose 文件（只需要这一个文件）
-cat > docker-compose.yml << 'EOF'
-version: "3.8"
+# 启动所有服务
+docker compose -f docker-compose.prod.yml up -d
 
-name: qianniu-system
+# 查看服务状态
+docker compose -f docker-compose.prod.yml ps
 
-services:
-  mysql:
-    container_name: qianniu-mysql
-    image: mysql:8
-    restart: unless-stopped
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_DATABASE: qianniu
-      MYSQL_ROOT_PASSWORD: your_mysql_password
-    volumes:
-      - mysql_data:/var/lib/mysql/
-    networks:
-      - qianniu-net
-
-  redis:
-    container_name: qianniu-redis
-    image: redis:6-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - qianniu-net
-
-  server:
-    container_name: qianniu-server
-    image: ghcr.io/zongyangbigpolo/qianniu:main
-    restart: unless-stopped
-    ports:
-      - "48080:48080"
-    environment:
-      SPRING_PROFILES_ACTIVE: local
-      JAVA_OPTS: -Xms512m -Xmx1024m
-      ARGS: >
-        --spring.datasource.dynamic.datasource.master.url=jdbc:mysql://qianniu-mysql:3306/qianniu?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-        --spring.datasource.dynamic.datasource.master.username=root
-        --spring.datasource.dynamic.datasource.master.password=your_mysql_password
-        --spring.data.redis.host=qianniu-redis
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - qianniu-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:48080/swagger-ui"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  admin:
-    container_name: qianniu-admin
-    image: nginx:latest
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - server
-    networks:
-      - qianniu-net
-
-volumes:
-  mysql_data:
-    driver: local
-  redis_data:
-    driver: local
-
-networks:
-  qianniu-net:
-    driver: bridge
-EOF
-
-# 2. 创建 Nginx 配置文件
-cat > nginx.conf << 'EOF'
-worker_processes auto;
-error_log /var/log/nginx/error.log warn;
-pid /var/run/nginx.pid;
-
-events {
-    worker_connections 1024;
-}
-
-http {
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-
-    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
-                    '$status $body_bytes_sent "$http_referer" '
-                    '"$http_user_agent" "$http_x_forwarded_for"';
-
-    access_log /var/log/nginx/access.log main;
-
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 65;
-    types_hash_max_size 2048;
-    gzip on;
-
-    upstream backend {
-        server qianniu-server:48080;
-    }
-
-    server {
-        listen 80;
-        server_name _;
-        client_max_body_size 100M;
-
-        # 前端
-        location / {
-            index index.html index.htm;
-            error_page 404 =200 /index.html;
-        }
-
-        # 后端 API
-        location /prod-api {
-            proxy_pass http://backend;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-    }
-}
-EOF
-
-# 3. 修改环境变量
-vim docker-compose.yml
-# 需要修改的字段：
-# - MYSQL_ROOT_PASSWORD: 改成你的强密码
-# - password=xxx: 两处都要改
-
-# 4. 启动所有服务
-docker-compose up -d
-
-# 5. 查看服务状态
-docker-compose ps
-
-# 6. 查看日志
-docker-compose logs -f server
+# 查看日志（首次启动 server 需要等 MySQL 建表 + Spring Boot 启动，约 30-60 秒）
+docker compose -f docker-compose.prod.yml logs -f server
 ```
+
+访问：
+- 前端管理后台：`http://你的ECS公网IP:8080`（默认账号 admin / admin123）
+- 后端 API 文档：`http://你的ECS公网IP:48080/doc.html`
+
+> 提示：如果你的 Docker 版本较老只有 `docker-compose`（带横杠）命令，把上面的 `docker compose` 换成 `docker-compose` 即可，用法一致。
 
 ## 🔄 自动更新部署
 
@@ -313,8 +189,9 @@ docker run -d \
 crontab -e
 
 # 添加以下行（每天凌晨2点更新）
-0 2 * * * cd /opt/qianniu && docker-compose pull && docker-compose up -d
+0 2 * * * cd /opt/qianniu && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 ```
+
 
 ## 🌐 配置域名和 HTTPS（可选）
 
