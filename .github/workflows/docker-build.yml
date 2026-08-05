@@ -54,7 +54,7 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha
+            type=sha,format=long
 
       - name: 🐳 构建并推送后端 Docker 镜像
         uses: docker/build-push-action@v6
@@ -111,7 +111,7 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha
+            type=sha,format=long
 
       - name: 🐳 构建并推送前端 Docker 镜像
         uses: docker/build-push-action@v6
@@ -148,7 +148,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: 📤 上传扫描结果
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
