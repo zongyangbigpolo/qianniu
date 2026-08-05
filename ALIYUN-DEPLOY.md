@@ -133,30 +133,33 @@ GHCR 镜像默认是 **私有** 的，即使仓库是私有的也一样。有两
 echo "你的GitHubToken" | docker login ghcr.io -u zongyangbigpolo --password-stdin
 ```
 
-### 第 2 步：Clone 仓库并配置
+### 第 2 步：一键部署（推荐，无需 git clone）
+
+部署只需要 3 个文件：`docker-compose.prod.yml`、`.env.prod.example`、`sql/mysql/ruoyi-vue-pro.sql`（MySQL 建表脚本）。
+镜像已经由 GitHub Actions 构建好放在 GHCR，服务器不需要下载整个仓库源码（600MB+），用下面的脚本只拉取这 3 个必要文件即可：
 
 ```bash
 cd /opt/qianniu
 
-# Clone 仓库（只需要 sql/ 目录的建表脚本 + docker-compose.prod.yml，不需要编译源码）
-git clone https://github.com/zongyangbigpolo/qianniu.git .
-
-# 创建环境变量文件
-cp .env.prod.example .env
-
-# 编辑环境变量，务必修改所有密码
-vim .env
+curl -fsSL https://raw.githubusercontent.com/zongyangbigpolo/qianniu/main/deploy/quick-deploy.sh -o quick-deploy.sh
+bash quick-deploy.sh
 ```
 
-### 第 3 步：启动服务
+脚本会自动：下载所需文件 → 生成 `.env`（提示你编辑密码）→ `docker compose pull` → `docker compose up -d`。
+
+> 如果你更喜欢用 git clone（比如想同时看源码/自己改配置），也完全没问题：
+> ```bash
+> cd /opt/qianniu
+> git clone https://github.com/zongyangbigpolo/qianniu.git .
+> cp .env.prod.example .env
+> vim .env
+> docker compose -f docker-compose.prod.yml pull
+> docker compose -f docker-compose.prod.yml up -d
+> ```
+
+### 第 3 步：查看状态
 
 ```bash
-# 拉取镜像（会从 GHCR 拉取 GitHub Actions 构建好的镜像）
-docker compose -f docker-compose.prod.yml pull
-
-# 启动所有服务
-docker compose -f docker-compose.prod.yml up -d
-
 # 查看服务状态
 docker compose -f docker-compose.prod.yml ps
 
