@@ -1,0 +1,102 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                   🎉 RuoYi-Vue-Pro Docker 部署包已准备就绪！                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📍 项目位置
+  /Users/polo2/srccode/ruoyi-vue-pro-docker
+
+📚 文档指南
+  ✨ QUICKSTART.md      - 快速开始指南（强烈推荐先读这个！）
+  ✨ DOCKER-DEPLOY.md   - 详细部署文档（包含生产部署）
+  📄 README.md          - 官方项目说明
+
+🚀 自动化脚本
+  ✨ deploy.sh          - 一键构建和部署（chmod +x 已设置）
+  
+  用法示例：
+    ./deploy.sh help           # 查看所有命令
+    ./deploy.sh build          # 构建 JAR 包
+    ./deploy.sh up             # 启动所有服务
+    ./deploy.sh status         # 查看服务状态
+    ./deploy.sh logs -s server # 查看后端日志
+
+⚙️  环境配置
+  ✨ script/docker/.env.example  - 环境变量模板（生产前必须复制改名）
+
+📦 包含内容
+  ✓ 后端项目 (Java 25 + Spring Boot 4.1.0)
+  ✓ 前端项目 (Vue 3 + Element Plus)
+  ✓ Docker 容器化配置 (MySQL + Redis)
+  ✓ 初始化数据库脚本
+  ✓ 自动化部署脚本
+  ✓ 详细部署文档
+
+🎯 接下来做什么
+
+【本地快速体验】
+  1. cd /Users/polo2/srccode/ruoyi-vue-pro-docker
+  2. ./deploy.sh build           # 第一次需要，约 15-30 分钟
+  3. ./deploy.sh up              # 启动服务
+  4. 访问 http://localhost:8080  (admin/admin123)
+
+【推送到自己的 GitHub】
+  1. 在 GitHub 创建新仓库：https://github.com/new
+  2. 运行以下命令：
+     git remote add origin https://github.com/YOUR_USERNAME/ruoyi-vue-pro-docker.git
+     git branch -M main
+     git push -u origin main
+
+【部署到阿里云】
+  1. 创建 ECS 实例 (CentOS/Ubuntu, 2核 4GB 内存)
+  2. 安装 Docker：curl -fsSL https://get.docker.com | bash
+  3. 上传项目：scp -r . root@your_server:/opt/
+  4. 构建并启动：./deploy.sh build && ./deploy.sh up
+  5. 配置安全组，开放 8080 和 48080 端口
+  6. 访问应用：http://your_server_ip:8080
+
+🔐 重要提示
+
+【生产环境前必做】
+  ✓ 修改数据库密码 (.env 中的 MYSQL_ROOT_PASSWORD)
+  ✓ 修改 Redis 密码（如需要）
+  ✓ 调整 JVM 内存配置 (JAVA_OPTS)
+  ✓ 配置后端 API 地址 (VUE_APP_BASE_API)
+
+【首次构建建议】
+  ✓ 保证网络稳定（会下载 1-2GB 依赖）
+  ✓ 考虑配置 Maven 国内镜像加快速度
+  ✓ 可以在后台运行，等待 20-30 分钟
+
+📞 常用命令
+
+  查看帮助：
+    ./deploy.sh help
+
+  本地开发：
+    cd yudao-server && mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=local"
+    cd yudao-ui-admin && npm install && npm run dev
+
+  Docker 操作：
+    cd script/docker
+    docker-compose up -d      # 启动
+    docker-compose ps         # 查看状态
+    docker-compose logs -f    # 查看日志
+    docker-compose down       # 停止
+
+🌟 项目地址
+  
+  官方项目：https://github.com/YunaiV/ruoyi-vue-pro
+  当前分支：master-jdk25 (Java 25 最新版本)
+  当前位置：/Users/polo2/srccode/ruoyi-vue-pro-docker
+
+📖 更多资源
+
+  官方文档：https://doc.iocoder.cn/
+  Spring Boot：https://spring.io/projects/spring-boot
+  Vue 3：https://vuejs.org/
+  Docker：https://docs.docker.com/
+  Docker Compose：https://docs.docker.com/compose/
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         开始享受开发之旅吧！🚀                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
