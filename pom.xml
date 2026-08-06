@@ -15,19 +15,24 @@
         <!-- 各种 module 拓展 -->
         <module>yudao-module-system</module>
         <module>yudao-module-infra</module>
+        <!-- 商城模块依赖 member（会员）、pay（支付），必须保留 -->
         <module>yudao-module-member</module>
+        <module>yudao-module-pay</module>
+        <module>yudao-module-mall</module>
+        <!-- ERP 模块 -->
+        <module>yudao-module-erp</module>
+        <!-- 以下模块暂时关闭，节省服务器内存：工作流、报表、公众号、CRM、IoT、MES、WMS、IM、AI -->
+        <!--
         <module>yudao-module-bpm</module>
         <module>yudao-module-report</module>
         <module>yudao-module-mp</module>
-        <module>yudao-module-pay</module>
-        <module>yudao-module-mall</module>
         <module>yudao-module-crm</module>
-        <module>yudao-module-erp</module>
         <module>yudao-module-iot</module>
         <module>yudao-module-mes</module>
         <module>yudao-module-wms</module>
         <module>yudao-module-im</module>
         <module>yudao-module-ai</module>
+        -->
     </modules>
 
     <name>${project.artifactId}</name>
