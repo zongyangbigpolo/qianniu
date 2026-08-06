@@ -34,4 +34,8 @@ echo "📋 当前服务状态:"
 docker compose -f "${COMPOSE_FILE}" ps
 
 echo ""
+echo "🧹 清理旧镜像（悬空镜像，不影响正在运行的容器）..."
+docker image prune -f
+
+echo ""
 echo "✅ 更新完成！查看后端启动日志: docker compose -f ${COMPOSE_FILE} logs -f server"
